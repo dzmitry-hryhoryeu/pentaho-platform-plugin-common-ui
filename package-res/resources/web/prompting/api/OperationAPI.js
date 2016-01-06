@@ -26,9 +26,9 @@
  * @property {Object} _msgs Contains possible constants of messages
  */
 define(['common-ui/prompting/PromptPanel', 'common-ui/prompting/parameters/ParameterXmlParser'], function(PromptPanel, ParameterXmlParser) {
-  return function(api) {
+  return function(api, id) {
     this._parameterParser = new ParameterXmlParser();
-    this._promptPanel = null;
+    this._promptPanel = new PromptPanel(id);
     this._msgs = {
       PROMPT_PANEL_NOT_FOUND: "Prompt Panel not found. Call 'api.operation.render' to create a panel.",
       NO_PARAM_XML: "'getParameterXml' function does not return valid xml.",
@@ -36,7 +36,7 @@ define(['common-ui/prompting/PromptPanel', 'common-ui/prompting/parameters/Param
     };
 
     this._getPromptPanel = function() {
-      if (!this._promptPanel) {
+      if (!this._promptPanel) { // Should never happen
         api.log.error(this._msgs.PROMPT_PANEL_NOT_FOUND, true);
       }
 
@@ -48,24 +48,23 @@ define(['common-ui/prompting/PromptPanel', 'common-ui/prompting/parameters/Param
      *
      * @name OperationAPI#render
      * @method
-     * @param {String}    id HTML object id where the render the panel
      * @param {Function}  getParameterXml The function called when the prompt panel needs to get the new parameter xml.
      *                                    Receives a callback function which needs to be executed either synchronously
      *                                    or asynchronously.
      * @example
      *  // Asynchronous
-     *  api.operation.render("prompt-panel-render-area", function(api, callback) {
+     *  api.operation.render(function(api, callback) {
      *    retrieveXml(function(xml){
      *      callback(xml);
      *    });
      *
      *  // Synchronous
-     *  api.operation.render("prompt-panel-render-area", function(api, callback) {
+     *  api.operation.render(function(api, callback) {
      *    var xml = retrieveXml();
      *    callback(xml); // return already retrieved xml definition
      *  });
      */
-    this.render = function(id, getParameterXml) {
+    this.render = function(getParameterXml) {
       if (!getParameterXml || typeof getParameterXml != "function") {
         api.log.error(this._msgs.NO_PARAM_XML_FUNC, true);
       }
@@ -76,7 +75,7 @@ define(['common-ui/prompting/PromptPanel', 'common-ui/prompting/parameters/Param
         }
 
         var paramDefn = this._parameterParser.parseParameterXml(xml);
-        this._promptPanel = new PromptPanel(id, paramDefn);
+        this._promptPanel.setParamDefn(paramDefn);
 
         // Override of getParameterDefinition
         this._promptPanel.getParameterDefinition = (function(promptPanel, refreshCallback) {
@@ -101,7 +100,15 @@ define(['common-ui/prompting/PromptPanel', 'common-ui/prompting/parameters/Param
      * @method
      */
     this.init = function() {
-      this._getPromptPanel().init();
+      try {
+        this._getPromptPanel().init();
+      } catch(e) {
+        if (e.message.search("addComponent: duplicate component name") > -1) {
+          api.log.warn("Prompt Panel has been initialized already");
+        } else {
+          throw e;
+        }
+      }
     };
 
     /**
@@ -109,10 +116,39 @@ define(['common-ui/prompting/PromptPanel', 'common-ui/prompting/parameters/Param
      *
      * @name OperationAPI#getParameterValues
      * @method
-     * @returns {Array} parameter values
+     * @returns {JSON} parameter values
      */
     this.getParameterValues = function() {
       return this._getPromptPanel().getParameterValues();
+    };
+
+    /**
+     * Sets the value of a dashboard parameter by parameter name. 
+     * This operation won't trigger any event on the prompt panel.
+     *
+     * @name OperationAPI#setParameterValue
+     * @method
+     * @param {String}    param The name of the parameter that's going to be set
+     * @param {Object}    value The new value for the parameter
+     */
+    this.setParameterValue = function(param, value) {
+      this._getPromptPanel().setParameterValue(param, value);
+    };
+
+    /**
+     * Refreshes the prompt panel.
+     * This API function gets a new parameter definition by using a special function that is defined as input callback for {@link OperationAPI#render}.
+     * Further are compared the previous and the new parameter definitions and after that it refreshes the prompt user interface with the differences between parameter definitions.
+     * For example, this API function can be used for submitting prompt panel.
+     *
+     * @name OperationAPI#refreshPrompt
+     * @param {Boolean} forceUpdate The flag indicates ability to update all components regardless of the difference previous and new xml from server
+     * @method
+     * @example
+     *     api.operation.refreshPrompt();
+     */
+    this.refreshPrompt = function(forceUpdate) {
+      this._getPromptPanel().refreshPrompt(forceUpdate);
     };
   };
 });
