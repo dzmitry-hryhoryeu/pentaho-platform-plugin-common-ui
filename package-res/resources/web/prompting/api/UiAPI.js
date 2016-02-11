@@ -51,5 +51,41 @@ define([], function() {
     this.hideProgressIndicator = function() {
       api.operation._getPromptPanel().hideProgressIndicator();
     };
+
+    /**
+     * Sets the default options for blockUI, which allows you to simulate synchronous behaviour when using AJAX
+     * by preventing user activity. Visually, an overlay can be used to cover the user interface.
+     *
+     * @name UiAPI#setBlockUiOptions
+     * @method
+     * @param {Object} options - The options to configure the block ui
+     * @param {string} options.message - The message or html to display on the block ui
+     * @param {Object} options.css - A json which accepts valid css key/value pairs for the message container
+     * @param {Object} options.overlayCSS - A json which accepts valid css key/value pairs for the block ui overlay
+     * @param {boolean} options.showOverlay - Allows you to show or hide the overlay on the block ui
+     * @example
+     *      var defaults = {
+     *          message : '',
+     *          css : {
+     *              left : '0%',
+     *              top : '0%',
+     *              marginLeft : '85px',
+     *              width : '100%',
+     *              height : '100%',
+     *              opacity : '1',
+     *              backgroundColor : '#ffffcc'
+     *          },
+     *          overlayCSS : {
+     *              backgroundColor : '#000000',
+     *              opacity : '0.6',
+     *              cursor : 'wait'
+     *          },
+     *          showOverlay : false
+     *      };
+     *      api.ui.setBlockUiOptions(defaults);
+     */
+    this.setBlockUiOptions = function(options) {
+      api.operation._getPromptPanel().setBlockUiOptions(options);
+    };
   };
 });
