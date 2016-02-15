@@ -1,5 +1,5 @@
 /*!
- * Copyright 2010 - 2015 Pentaho Corporation.  All rights reserved.
+ * Copyright 2010 - 2016 Pentaho Corporation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,9 @@ define([
   "../lang/_AnnotatableLinked",
   "../util/error",
   "../util/arg",
-  "../util/fun",
   "../util/object",
   "../util/promise"
-], function(bundle, Base, AnnotatableLinked, error, arg, fun, O, promise) {
-
+], function(bundle, Base, AnnotatableLinked, error, arg, O, promiseUtil) {
   "use strict";
 
   // Unique item class id exposed through Item.Meta#uid and used by Context instances.
@@ -619,7 +617,7 @@ define([
           this._view = {value: value, promise: null};
         }
       } else {
-        // Assume it is the View class itself, already resolved.
+        // Assume it is the View class itself, already fulfilled.
         if(!this._view || this._view.value !== value) {
           this._view = {value: value, promise: Promise.resolve(value)};
         }
@@ -641,7 +639,7 @@ define([
      */
     get viewClass() {
       var view = this._view;
-      return view && (view.promise || (view.promise = promise.require([view.value])));
+      return view && (view.promise || (view.promise = promiseUtil.require(view.value)));
     },
     //endregion
 
